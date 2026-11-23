@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     app_name: str = "RAG-Based Document Q&A System"
     app_env: str = "development"
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = int(os.environ.get("PORT", 7860))
     
     # LLM Settings (Groq, Gemini, or Offline)
     llm_provider: Literal["groq", "gemini", "offline"] = "groq"
