@@ -17,8 +17,8 @@ A high-performance, production-grade **Retrieval-Augmented Generation (RAG) Docu
 - **Grounding & Hallucination Mitigation**: Enforces strict prompt engineering and similarity score thresholding. If no document chunk meets the contextual threshold, the system explicitly disclaims unverified claims rather than hallucinating answers.
 - **Auditable Source Citations**: Every generated response includes granular source attribution—document title, page number, chunk index, similarity score, and excerpted snippets.
 - **Pluggable LLM & Embedding Architecture**:
-  - **OpenAI**: GPT-4o, GPT-4o-mini, `text-embedding-3-small`
-  - **Google Gemini**: Gemini 1.5 Flash, Gemini 1.5 Pro, `text-embedding-004`
+  - **Groq Cloud**: Ultra-fast LLM inference (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`)
+  - **Google Gemini**: High-dimensional embeddings (`gemini-embedding-001`, 3072-dim) and Gemini models
   - **Deterministic Local/Offline Engine**: Zero-cost, zero-API-key fallback mode using pure NumPy for vector math and deterministic local testing.
 - **Interactive Modern Web Dashboard**: Built-in glassmorphic responsive UI featuring drag-and-drop document uploads, chunk preview, configurable Top-K & similarity sliders, and live conversational chat.
 

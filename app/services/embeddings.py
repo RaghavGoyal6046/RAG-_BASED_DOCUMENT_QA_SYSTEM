@@ -14,7 +14,6 @@ class LocalDeterministicEmbeddings:
         self.dimension = dimension
 
     def _tokenize(self, text: str) -> List[str]:
-        # Extract lowercase words and character 3-grams for semantic robustness
         words = re.findall(r"\b\w+\b", text.lower())
         tokens = list(words)
         for w in words:
@@ -30,14 +29,11 @@ class LocalDeterministicEmbeddings:
             return vec.tolist()
 
         for token in tokens:
-            # Deterministic hash mapping into vector dimensions
             h = hash(token)
             idx = abs(h) % self.dimension
             sign = 1.0 if (h >> 16) & 1 else -1.0
-            # Term weight with logarithmic dampening
             vec[idx] += sign
 
-        # L2 normalize vector for cosine similarity
         norm = np.linalg.norm(vec)
         if norm > 0:
             vec = vec / norm
@@ -50,30 +46,44 @@ class LocalDeterministicEmbeddings:
         return self._embed_text(text)
 
 
+class GeminiEmbeddingsWrapper:
+    """Wrapper around Google GenAI client for dense embedding generation with offline fallback."""
+    def __init__(self, api_key: str, model: str = "gemini-embedding-001"):
+        from google import genai
+        self.client = genai.Client(api_key=api_key)
+        self.model = model
+        self.fallback = LocalDeterministicEmbeddings(dimension=384)
+
+    def embed_query(self, text: str) -> List[float]:
+        try:
+            res = self.client.models.embed_content(model=self.model, contents=text)
+            return res.embeddings[0].values
+        except Exception as e:
+            return self.fallback.embed_query(text)
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        try:
+            results = []
+            for i in range(0, len(texts), 10):
+                batch = texts[i:i+10]
+                for t in batch:
+                    res = self.client.models.embed_content(model=self.model, contents=t)
+                    results.append(res.embeddings[0].values)
+            return results
+        except Exception as e:
+            return self.fallback.embed_documents(texts)
+
+
 def get_embedding_function():
     """Factory function to get the configured embedding model."""
     provider = settings.embeddings_provider.lower()
-    
-    if provider == "openai":
-        if settings.openai_api_key and settings.openai_api_key != "your_openai_api_key_here":
-            try:
-                from langchain_openai import OpenAIEmbeddings
-                return OpenAIEmbeddings(
-                    model=settings.embeddings_model,
-                    openai_api_key=settings.openai_api_key
-                )
-            except Exception as e:
-                print(f"[Warning] Failed to initialize OpenAI Embeddings ({e}). Falling back to local embeddings.")
-        else:
-            print("[Info] OpenAI API key not set. Using local deterministic embeddings.")
-            
-    elif provider == "gemini":
+
+    if provider == "gemini":
         if settings.gemini_api_key and settings.gemini_api_key != "your_gemini_api_key_here":
             try:
-                from langchain_google_genai import GoogleGenerativeAIEmbeddings
-                return GoogleGenerativeAIEmbeddings(
-                    model="models/text-embedding-004",
-                    google_api_key=settings.gemini_api_key
+                return GeminiEmbeddingsWrapper(
+                    api_key=settings.gemini_api_key,
+                    model=settings.embeddings_model
                 )
             except Exception as e:
                 print(f"[Warning] Failed to initialize Gemini Embeddings ({e}). Falling back to local embeddings.")

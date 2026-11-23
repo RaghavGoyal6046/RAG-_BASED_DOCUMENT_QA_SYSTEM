@@ -9,17 +9,17 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     
-    # LLM Settings
-    llm_provider: Literal["openai", "gemini", "offline"] = "openai"
-    llm_model: str = "gpt-4o-mini"
+    # LLM Settings (Groq, Gemini, or Offline)
+    llm_provider: Literal["groq", "gemini", "offline"] = "groq"
+    llm_model: str = "openai/gpt-oss-120b"
     llm_temperature: float = 0.1
     
-    # Embedding Settings
-    embeddings_provider: Literal["openai", "gemini", "local"] = "openai"
-    embeddings_model: str = "text-embedding-3-small"
+    # Embedding Settings (Gemini or Local)
+    embeddings_provider: Literal["gemini", "local"] = "gemini"
+    embeddings_model: str = "gemini-embedding-001"
     
     # API Keys
-    openai_api_key: str | None = None
+    groq_api_key: str | None = None
     gemini_api_key: str | None = None
     
     # RAG Ingestion & Retrieval Configuration

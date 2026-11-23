@@ -87,6 +87,10 @@ class VectorStoreManager:
             return []
 
         query_vec = np.array(self.embedding_fn.embed_query(query), dtype=np.float32)
+        if query_vec.shape[0] != self.vectors.shape[1]:
+            from app.services.embeddings import LocalDeterministicEmbeddings
+            query_vec = np.array(LocalDeterministicEmbeddings(dimension=self.vectors.shape[1]).embed_query(query), dtype=np.float32)
+
         q_norm = np.linalg.norm(query_vec)
         if q_norm > 0:
             query_vec = query_vec / q_norm

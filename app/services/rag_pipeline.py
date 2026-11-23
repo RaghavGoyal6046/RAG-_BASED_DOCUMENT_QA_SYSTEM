@@ -31,7 +31,7 @@ class RAGPipelineService:
     - Queries vector store for relevant chunks
     - Performs context filtering & hallucination guards
     - Formats grounded prompt
-    - Invokes LLM (OpenAI, Gemini, or Offline Extractive Generator)
+    - Invokes LLM (Groq, Gemini, or Offline Extractive Generator)
     - Emits structured QueryResponse with source citations and confidence metrics
     """
 
@@ -46,31 +46,35 @@ class RAGPipelineService:
         """Initializes the active LLM based on settings and available API keys."""
         provider = settings.llm_provider.lower()
 
-        if provider == "openai":
-            if settings.openai_api_key and settings.openai_api_key != "your_openai_api_key_here":
+        if provider == "groq":
+            if settings.groq_api_key and settings.groq_api_key != "your_groq_api_key_here":
                 try:
-                    from langchain_openai import ChatOpenAI
-                    return ChatOpenAI(
+                    from langchain_groq import ChatGroq
+                    return ChatGroq(
                         model=settings.llm_model,
                         temperature=settings.llm_temperature,
-                        openai_api_key=settings.openai_api_key
+                        api_key=settings.groq_api_key
                     )
                 except Exception as e:
-                    print(f"[Warning] Failed to instantiate ChatOpenAI ({e}). Falling back to offline generator.")
+                    print(f"[Warning] Failed to instantiate ChatGroq ({e}). Falling back to offline generator.")
             else:
-                print("[Info] OpenAI API key not configured. Using offline grounded generator.")
+                print("[Info] Groq API key not configured. Using offline grounded generator.")
 
         elif provider == "gemini":
             if settings.gemini_api_key and settings.gemini_api_key != "your_gemini_api_key_here":
                 try:
-                    from langchain_google_genai import ChatGoogleGenerativeAI
-                    return ChatGoogleGenerativeAI(
-                        model="gemini-1.5-flash",
-                        temperature=settings.llm_temperature,
-                        google_api_key=settings.gemini_api_key
-                    )
+                    from google import genai
+                    class GeminiClientWrapper:
+                        def __init__(self, key: str, model: str):
+                            self.client = genai.Client(api_key=key)
+                            self.model = model
+                        def invoke(self, prompt_text: str):
+                            res = self.client.models.generate_content(model=self.model, contents=prompt_text)
+                            return type("Obj", (), {"content": res.text})()
+
+                    return GeminiClientWrapper(settings.gemini_api_key, settings.llm_model)
                 except Exception as e:
-                    print(f"[Warning] Failed to instantiate ChatGoogleGenerativeAI ({e}). Falling back to offline generator.")
+                    print(f"[Warning] Failed to instantiate Gemini client ({e}). Falling back to offline generator.")
             else:
                 print("[Info] Gemini API key not configured. Using offline grounded generator.")
 
@@ -85,13 +89,11 @@ class RAGPipelineService:
             return "Based on the provided documents, I could not find information to answer this question."
 
         q_words = set(re.findall(r"\b\w{3,}\b", question.lower()))
-        # Remove common query stop words
         stop_words = {"what", "when", "where", "which", "who", "whom", "whose", "why", "how", "does", "the", "and", "is", "are"}
         q_keywords = q_words - stop_words
 
         matched_sentences = []
         for doc, score in retrieved_docs:
-            # Split content into sentences
             sentences = re.split(r"(?<=[.!?])\s+", doc.page_content)
             for s in sentences:
                 s_clean = s.strip()
@@ -103,12 +105,10 @@ class RAGPipelineService:
                     matched_sentences.append((s_clean, overlap, score, doc.metadata.get("filename", "document")))
 
         if not matched_sentences:
-            # Fallback to the top chunk's first sentences
             top_doc = retrieved_docs[0][0]
             first_sentence = top_doc.page_content.split("\n")[0]
             return f"According to {top_doc.metadata.get('filename', 'the document')}: {first_sentence}"
 
-        # Sort by overlap and relevance score
         matched_sentences.sort(key=lambda x: (x[1], x[2]), reverse=True)
         top_answers = []
         seen = set()
