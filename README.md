@@ -205,19 +205,24 @@ pytest -v
 
 ---
 
-## 🐳 Docker Deployment
+## 🌐 Live Cloud Deployment (e.g. Render / Railway)
 
-You can build and run the entire application using Docker:
+You can deploy this FastAPI RAG application to **Render** or **Railway** for free:
 
-```bash
-docker build -t rag-document-qa .
-docker run -p 8000:8000 --env-file .env rag-document-qa
-```
-
-Or with Docker Compose:
-```bash
-docker compose up -d
-```
+### Deploy to Render:
+1. Push your repository to GitHub.
+2. Log in to [render.com](https://render.com) and click **New +** -> **Web Service**.
+3. Select your GitHub repository (`RAG-_BASED_DOCUMENT_QA_SYSTEM`).
+4. Set the following configurations:
+   - **Environment:** `Python 3`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5. Under **Environment Variables**, add:
+   - `GROQ_API_KEY`: `your_groq_api_key`
+   - `GEMINI_API_KEY`: `your_gemini_api_key`
+   - `LLM_PROVIDER`: `groq`
+   - `EMBEDDINGS_PROVIDER`: `gemini`
+6. Click **Deploy Web Service**. Render will build and provide a live public HTTPS URL (e.g., `https://your-app.onrender.com`).
 
 ---
 
