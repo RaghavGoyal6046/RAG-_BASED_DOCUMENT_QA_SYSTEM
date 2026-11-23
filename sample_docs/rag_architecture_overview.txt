@@ -1,0 +1,25 @@
+Retrieval-Augmented Generation (RAG) Architecture and Design
+
+1. Introduction to RAG
+Retrieval-Augmented Generation (RAG) is an advanced AI framework that optimizes the output of a Large Language Model (LLM) by referencing an authoritative knowledge base outside of its training data sources before generating a response. Large Language Models are trained on vast volumes of data and use billions of parameters to generate original output for tasks like answering questions, translating languages, and completing sentences. However, traditional LLMs suffer from knowledge cutoff dates and hallucinations when asked about specialized or proprietary domain knowledge.
+
+2. Document Ingestion and Text Chunking
+The RAG pipeline begins with document ingestion. Documents in various formats (such as PDF, DOCX, TXT, and CSV) are parsed to extract raw text along with structural metadata like page numbers and document titles.
+Because LLMs have limited context window sizes and retrieval precision degrades with large monolithic text blocks, the document text is split into smaller, overlapping chunks using recursive character text splitters. Typical chunk sizes range from 500 to 1200 characters, with an overlap of 100 to 200 characters to prevent loss of semantic context across chunk boundaries.
+
+3. Embedding Generation and Vector Databases
+Each text chunk is converted into a high-dimensional dense vector representation (embedding) using an embedding model such as OpenAI's text-embedding-3-small or open-source transformer models. These embeddings capture the semantic meaning of the text.
+The generated vector embeddings are indexed into a vector database or vector index (such as FAISS, ChromaDB, or persistent cosine similarity indexes). When a user poses a question, the question is converted into an embedding using the same model, and cosine similarity or approximate nearest neighbor (ANN) search retrieves the top-k most relevant document chunks.
+
+4. Grounding and Hallucination Mitigation
+To eliminate hallucinations, the RAG pipeline introduces strict prompt engineering. The retrieved context chunks are inserted into a structured prompt template along with explicit instructions:
+- The model must ground its answers strictly on the supplied context snippets.
+- If the context does not contain sufficient factual evidence, the model must explicitly state that it cannot find the information in the documents.
+- The model must cite the source document name, page, and chunk index for every verified claim.
+
+5. Benefits of RAG Systems
+Key benefits of RAG include:
+- Elimination of LLM hallucinations by restricting answers to verified enterprise documents.
+- Cost efficiency compared to fine-tuning large models.
+- Real-time knowledge updates without model retraining—simply ingest new documents into the vector store.
+- Complete auditability and provenance tracking through precise source citations.

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  rag-system:
+    build: .
+    container_name: rag-document-qa
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=RAG-Based Document Q&A System
+      - PORT=8000
+      - HOST=0.0.0.0
+      - LLM_PROVIDER=openai
+      - LLM_MODEL=gpt-4o-mini
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
